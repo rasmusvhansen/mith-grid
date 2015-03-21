@@ -10,23 +10,44 @@
     app.vm.counter = 0;
     app.vm.rowsToShow = 100;
     app.vm.startAtRow = 0;
-    app.vm.loadMore = function () {
-        app.vm.startAtRow = Math.min(app.vm.rows().length - app.vm.rowsToShow, app.vm.startAtRow + app.vm.rowsToShow);    
+    app.vm.loadMore = function() {
+        app.vm.startAtRow = Math.min(app.vm.rows().length - app.vm.rowsToShow, app.vm.startAtRow + app.vm.rowsToShow);
+        app.vm.filterAndPage();
     };
-    
-    app.vm.canLoadMore = function () {
+
+    app.vm.canLoadMore = function() {
         return app.vm.startAtRow + app.vm.rowsToShow < app.vm.rows().length;
     };
-    
-    app.vm.loadLess = function () {
-        app.vm.startAtRow = Math.max(0, app.vm.startAtRow - app.vm.rowsToShow);    
+
+    app.vm.loadLess = function() {
+        app.vm.startAtRow = Math.max(0, app.vm.startAtRow - app.vm.rowsToShow);
+        app.vm.filterAndPage();
     };
-    app.vm.pagedRows = function() {
-        var totalRowCount = app.vm.rows().length,
+
+
+    app.vm.pagedRows = m.prop();
+
+    app.vm.filterAndPage = function() {
+        var filteredRows = !app.vm.filter() ? app.vm.rows() : app.vm.rows().filter(function(r) {
+            return Object.keys(r).some(function(k) {
+                return r[k].toString().indexOf(app.vm.filter()) > -1;
+            });
+        });
+
+        var totalRowCount = filteredRows.length,
             start = Math.min((totalRowCount - app.vm.rowsToShow), app.vm.startAtRow),
             end = start + app.vm.rowsToShow;
-        return app.vm.rows().slice(start, end);
+        app.vm.pagedRows(filteredRows.slice(start, end));
     };
+
+    app.vm.filter = m.prop();
+    
+    app.vm.doFilter = function (f) {
+        app.vm.filter(f);
+        app.vm.filterAndPage();
+    }
+        
+    
 
     app.vm.rows = m.prop(
         [{
@@ -43,12 +64,16 @@
             "Count": 25
         }]);
 
+    app.vm.filterAndPage();
+
 
     //controller
     app.controller = function() {
         var rows = app.vm.rows;
         return {
             rows: rows,
+            filter: app.vm.filter,
+            doFilter: app.vm.doFilter,
             pagedRows: app.vm.pagedRows,
             addAsync: function() {
                 m.startComputation();
@@ -58,6 +83,7 @@
                         Title: 'test',
                         Count: 27
                     });
+                    app.vm.filterAndPage();
                     m.endComputation();
                 }, 500)
             },
@@ -70,12 +96,13 @@
                     });
                 }
                 app.vm.counter += n;
+                app.vm.filterAndPage();
             },
             scroll: function(e) {
                 var scrollHeight = e.target.scrollHeight,
                     scrollTop = e.target.scrollTop,
                     fromTop = scrollTop + e.target.clientHeight;
-                if (scrollHeight - fromTop < 50 && app.vm.canLoadMore() ) {
+                if (scrollHeight - fromTop < 50 && app.vm.canLoadMore()) {
                     app.vm.loadMore();
                     e.target.scrollTop = 20;
                 }
@@ -96,7 +123,7 @@
                     display: 'block'
                 }
             }, [
-                Object.keys(ctrl.pagedRows()[0]).map(function(th) {
+                Object.keys(ctrl.rows()[0]).map(function(th) {
                     return m('th', th);
                 })
             ]),
@@ -122,8 +149,13 @@
                 onclick: ctrl.addAsync
             }, 'Add row async'),
             m('button', {
-                onclick: ctrl.addManyRows.bind(null, 5000)
+                onclick: ctrl.addManyRows.bind(null, 50000)
             }, 'Add many rows'),
+            m('br'),
+            m('input', {
+                oninput: m.withAttr("value", ctrl.doFilter),
+                value: ctrl.filter()
+            }),
             m('br'),
             table
         ]);
