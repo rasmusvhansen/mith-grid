@@ -40,7 +40,7 @@
         app.vm.pagedRows(filteredRows.slice(start, end));
     };
 
-    app.vm.filter = m.prop();
+    app.vm.filter = m.prop('');
     
     app.vm.doFilter = function (f) {
         app.vm.filter(f);
@@ -49,20 +49,7 @@
         
     
 
-    app.vm.rows = m.prop(
-        [{
-            "URL": "http://google.com",
-            "Title": "google",
-            "Count": 5
-        }, {
-            "URL": "http://dr.dk",
-            "Title": "DR",
-            "Count": 15
-        }, {
-            "URL": "http://jp.dk",
-            "Title": "JP",
-            "Count": 25
-        }]);
+    app.vm.rows = m.prop([]);
 
     app.vm.filterAndPage();
 
@@ -70,6 +57,28 @@
     //controller
     app.controller = function() {
         var rows = app.vm.rows;
+        function addNRows(n) {
+            for (var i = app.vm.counter; i < app.vm.counter + n; i++) {
+                    rows().push({
+                        URL: 'http://test.com',
+                        Title: 'test',
+                        Count: i,
+                        Col4: 'c4-'+i,
+                        Col5: 'c5-'+i,
+                        Col6: 'c6-'+i,
+                        Col7: 'c7-'+i,
+                        Col8: 'c8-'+i,
+                        Col9: 'c9-'+i,
+                        Col10: 'c10-'+i,
+                        Col11: 'c11-'+i,
+                        Col12: 'c12-'+i,
+                    });
+                }
+                app.vm.counter += n;
+                app.vm.filterAndPage();    
+        }
+        addNRows(5);
+        
         return {
             rows: rows,
             filter: app.vm.filter,
@@ -79,7 +88,7 @@
                 m.startComputation();
                 setTimeout(function() {
                     rows().push({
-                        URL: 'http://test.com',
+                        URL: 'http://testingtheawesome.com',
                         Title: 'test',
                         Count: 27
                     });
@@ -87,17 +96,7 @@
                     m.endComputation();
                 }, 500)
             },
-            addManyRows: function(n) {
-                for (var i = app.vm.counter; i < app.vm.counter + n; i++) {
-                    rows().push({
-                        URL: 'http://test.com',
-                        Title: 'test',
-                        Count: i
-                    });
-                }
-                app.vm.counter += n;
-                app.vm.filterAndPage();
-            },
+            addManyRows: addNRows,
             scroll: function(e) {
                 var scrollHeight = e.target.scrollHeight,
                     scrollTop = e.target.scrollTop,
